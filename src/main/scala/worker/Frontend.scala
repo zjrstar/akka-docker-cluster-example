@@ -15,12 +15,10 @@ object Frontend {
 class Frontend extends Actor {
   import Frontend._
   import context.dispatcher
-  val masterProxy = context.actorOf(
-    ClusterSingletonProxy.props(
+  //创建ClusterSingleton的master
+  val masterProxy = context.actorOf(ClusterSingletonProxy.props(
       settings = ClusterSingletonProxySettings(context.system).withRole("backend"),
-      singletonManagerPath = "/user/master"
-    ),
-    name = "masterProxy")
+      singletonManagerPath = "/user/master"), name = "masterProxy")
 
   def receive = {
     case work =>

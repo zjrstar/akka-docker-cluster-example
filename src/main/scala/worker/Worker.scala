@@ -29,6 +29,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   val workExecutor = context.watch(context.actorOf(workExecutorProps, "exec"))
 
   var currentWorkId: Option[String] = None
+
   def workId: String = currentWorkId match {
     case Some(workId) => workId
     case None         => throw new IllegalStateException("Not working")
@@ -48,9 +49,10 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   def receive = idle
 
   def idle: Receive = {
+    //如果收到WorkIsReady的时候，回复Master，请求work的消息WorkerRequestsWork
     case WorkIsReady =>
       sendToMaster(WorkerRequestsWork(workerId))
-
+    //接收work，把job发送给workExecutor
     case Work(workId, job) =>
       log.info("Got work: {}", job)
       currentWorkId = Some(workId)
@@ -59,6 +61,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   }
 
   def working: Receive = {
+    //收到work完成,把结果发送给master
     case WorkComplete(result) =>
       log.info("worker.Work is complete. Result {}.", result)
       sendToMaster(WorkIsDone(workerId, workId, result))
@@ -70,10 +73,12 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   }
 
   def waitForWorkIsDoneAck(result: Any): Receive = {
+    //等待Master回应，如果ack回应后，则请求新的work
     case Ack(id) if id == workId =>
       sendToMaster(WorkerRequestsWork(workerId))
       context.setReceiveTimeout(Duration.Undefined)
       context.become(idle)
+    //如果收到Timeout，则继续发送WorkIsDone消息
     case ReceiveTimeout =>
       log.info("No ack from master, retrying")
       sendToMaster(WorkIsDone(workerId, workId, result))

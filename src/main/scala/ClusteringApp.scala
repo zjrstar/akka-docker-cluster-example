@@ -29,9 +29,10 @@ object ClusteringApp extends App {
     val f = replicatedCache ? GetFromCache("key1")
     val result = Await.result(f, 30 seconds).asInstanceOf[Cached]
     result match {
-      case Cached(key, Some(value)) => println(s"""key=${key} for value=${value}""");
+      case Cached(key, Some(value)) => //println(s"""key=${key} for value=${value}""")
     }
     Cluster(system).state.members.filter(_.address.host.get.contains("seed")).foreach(m => println(s"seed member: ${m}"))
+    Cluster(system).state.members.foreach(m => println(s"member: ${m}"))
     Thread.sleep(5000)
   }
 

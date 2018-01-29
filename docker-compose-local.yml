@@ -2,11 +2,6 @@ version: '3.4'
 services:
   seed:
     image: mhamrah/clustering:0.3
-    ports:
-      - target: 1600
-        published: 1600
-        protocol: tcp
-        mode: ingress
     environment:
       CLUSTER_PORT: 1600
       CLUSTER_IP: seed

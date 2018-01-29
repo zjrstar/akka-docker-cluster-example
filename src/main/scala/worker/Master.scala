@@ -50,8 +50,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   import context.dispatcher
 
-  val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2,
-    self, CleanupTick)
+  val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2, self, CleanupTick)
 
   override def postStop(): Unit = cleanupTask.cancel()
 
@@ -63,6 +62,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   }
 
   override def receiveCommand: Receive = {
+    //注册Worker,如果workers包含worker，那么只更新ref
+    //如果workers中不包含worker，需要在workers中增加worker
     case MasterWorkerProtocol.RegisterWorker(workerId) =>
       if (workers.contains(workerId)) {
         workers += (workerId -> workers(workerId).copy(ref = sender()))
@@ -72,7 +73,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         if (workState.hasWork)
           sender() ! MasterWorkerProtocol.WorkIsReady
       }
-
+    //如果收到worker请求work的时候，发送work给worker
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
       if (workState.hasWork) {
         workers.get(workerId) match {
@@ -87,7 +88,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
           case _ =>
         }
       }
-
+    //如果收到某个workerId发出的workId的结束消息WorkIsDone
     case MasterWorkerProtocol.WorkIsDone(workerId, workId, result) =>
       // idempotent
       if (workState.isDone(workId)) {
@@ -105,7 +106,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
           sender ! MasterWorkerProtocol.Ack(workId)
         }
       }
-
+    //如果收到某个workerId发出的workId消息WorkFailed
     case MasterWorkerProtocol.WorkFailed(workerId, workId) =>
       if (workState.isInProgress(workId)) {
         log.info("Work {} failed by worker {}", workId, workerId)
@@ -115,7 +116,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
           notifyWorkers()
         }
       }
-
+    //如果收到Work类型的消息
     case work: Work =>
       // idempotent
       if (workState.isAccepted(work.workId)) {
@@ -129,7 +130,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
           notifyWorkers()
         }
       }
-
+    //如果收到CleanupTick类型的消息
     case CleanupTick =>
       for ((workerId, s@WorkerState(_, Busy(workId, timeout))) ← workers) {
         if (timeout.isOverdue) {
