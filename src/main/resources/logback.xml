@@ -16,6 +16,10 @@
     <appender-ref ref="console" />
   </logger>
 
+  <logger name="pl.immutables.akka.reasonable.downing" level="debug" additivity="false">
+    <appender-ref ref="console" />
+  </logger>
+
   <root level="warn">
     <appender-ref ref="console"/>
   </root>

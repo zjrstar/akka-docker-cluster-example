@@ -19,7 +19,6 @@ scmInfo := Some(
 /* scala versions and options */
 scalaVersion := "2.11.4"
 
-// These options will be used for *all* versions.
 scalacOptions ++= Seq(
   "-deprecation"
   ,"-unchecked"
@@ -34,25 +33,23 @@ scalacOptions ++= Seq(
 
 val akka = "2.5.8"
 
-/* dependencies */
 libraryDependencies ++= Seq (
   "com.github.nscala-time" %% "nscala-time" % "1.2.0",
-  // -- testing --
-  "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
-  // -- Logging --
-  "com.typesafe.akka" %% "akka-slf4j"  % akka,
   "ch.qos.logback" % "logback-classic" % "1.0.10",
-  // -- Akka --
   "com.typesafe.akka" %% "akka-testkit" % akka % "test",
   "com.typesafe.akka" %% "akka-actor" % akka,
   "com.typesafe.akka" %% "akka-cluster" % akka,
+  "com.typesafe.akka" %% "akka-cluster-tools" % akka,
+  "com.typesafe.akka" %% "akka-persistence" % akka,
+  "com.typesafe.akka" %% "akka-slf4j"  % akka,
+  "org.iq80.leveldb" % "leveldb" % "0.7",
+  "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
   "com.typesafe.akka" %% "akka-remote" % akka,
-  "com.typesafe.akka" %% "akka-cluster" % akka,
   "com.typesafe.akka" %% "akka-distributed-data" % akka,
   "com.typesafe.akka" %% "akka-multi-node-testkit" % akka,
-  // -- json --
+  "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
+  "commons-io" % "commons-io" % "2.4" % "test",
   "org.json4s" %% "json4s-jackson" % "3.2.10",
-  // -- config --
   "com.typesafe" % "config" % "1.2.0"
 )
 
@@ -65,5 +62,5 @@ dockerEntrypoint in Docker := Seq("sh", "-c", "bin/clustering")
 
 dockerRepository := Some("mhamrah")
 
-dockerBaseImage := "java"
+dockerBaseImage := "10.232.128.157:5000/yiguan/java:1.7"
 enablePlugins(JavaAppPackaging)

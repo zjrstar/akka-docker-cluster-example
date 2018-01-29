@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 services:
   seed:
     image: mhamrah/clustering:0.3
@@ -6,6 +6,8 @@ services:
       CLUSTER_PORT: 1600
       CLUSTER_IP: seed
       SEED_PORT_1600_TCP_ADDR: seed
+      QUORUM_SIZE: 4
+      SEED_SIZE: 1
 
   c1:
     image: mhamrah/clustering:0.3
@@ -13,4 +15,5 @@ services:
       CLUSTER_PORT: 0
       CLUSTER_IP: ""
       SEED_PORT_1600_TCP_ADDR: seed
-
+      QUORUM_SIZE: 4
+      SEED_SIZE: 1
