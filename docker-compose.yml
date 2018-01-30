@@ -22,3 +22,10 @@ services:
       SEED_PORT_1600_TCP_ADDR: seed
       QUORUM_SIZE: 4
       SEED_SIZE: 1
+
+  journal:
+    image: 10.232.128.157:5000/yiguan/mongo:3.2.12
+    tmpfs:
+      - /tmp
+    ports:
+      - 27027:27017

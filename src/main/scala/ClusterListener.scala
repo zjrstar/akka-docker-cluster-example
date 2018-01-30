@@ -17,7 +17,7 @@ class ClusterListener extends Actor with ActorLogging {
       log.debug("Member has joined: {}", member.address)
     case MemberWeaklyUp(member) =>
       log.debug("Member is weakly up {}", member.address)
-    case state: CurrentClusterState ⇒
+    case state: CurrentClusterState =>
       log.debug("Current Leader is {}", state.getLeader)
       log.debug("Current members: {}", state.members.mkString(", "))
       log.debug("Current members role is : {}", state.allRoles.mkString(","))

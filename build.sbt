@@ -50,7 +50,9 @@ libraryDependencies ++= Seq (
   "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
   "commons-io" % "commons-io" % "2.4" % "test",
   "org.json4s" %% "json4s-jackson" % "3.2.10",
-  "com.typesafe" % "config" % "1.2.0"
+  "com.typesafe" % "config" % "1.2.0",
+  "com.typesafe.akka" %% "akka-http" % "10.0.6",
+  "com.typesafe.akka" %% "akka-http-core" % "10.0.6"
 )
 
 maintainer := "Michael Hamrah <m@hamrah.com>"
