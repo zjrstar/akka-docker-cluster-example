@@ -1,32 +1,66 @@
 package worker
 
-import akka.actor.Actor
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.cluster.Cluster
+import akka.cluster.ddata.Replicator._
+import akka.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
 import akka.pattern._
 import akka.util.Timeout
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Frontend {
-  case object Ok
+
+  def props: Props = Props(classOf[Frontend])
+
+  case class Ok(result: Int)
+
   case object NotOk
+
+  private final case class Request(key: String, replyTo: ActorRef)
+
+  case class PutInCache(key: String, value: Int)
+
+  case class Evict(key: String)
+
+  case class GetFromCache(key: String)
+
+  case class Cached(key: String, value: Option[Int])
+
 }
 
-class Frontend extends Actor {
+class Frontend extends Actor with ActorLogging {
+
   import Frontend._
-  import context.dispatcher
-  //创建ClusterSingleton的master
-  val masterProxy = context.actorOf(ClusterSingletonProxy.props(
-      settings = ClusterSingletonProxySettings(context.system).withRole("backend"),
-      singletonManagerPath = "/user/master"), name = "masterProxy")
+
+  val replicator = DistributedData(context.system).replicator
+  implicit val cluster = Cluster(context.system)
+
+  val master = context.actorOf(Master.props(10.seconds), "master")
+
+  def dataKey(entryKey: String): LWWMapKey[String, Int] = LWWMapKey("cache-" + math.abs(entryKey.hashCode) % 100)
 
   def receive = {
-    case work =>
+    case work: Work =>
+      val key = work.job.toString
+      replicator ! Get(dataKey(key), ReadMajority(timeout = 5 seconds), Some(Request(key, sender())))
+    case g@GetSuccess(LWWMapKey(_), Some(Request(key, replyTo))) =>
+      g.dataValue match {
+        case data: LWWMap[_, _] => data.asInstanceOf[LWWMap[String, Int]].get(key) match {
+          case Some(value) => {
+            log.error("Get value {} fro key {}", value, key)
+            replyTo ! Ok(value)
+          }
+          case None => replyTo ! NotOk
+        }
+      }
+    case NotFound(_, Some(Request(key, replyTo))) =>
       implicit val timeout = Timeout(5.seconds)
-      (masterProxy ? work) map {
-        case Master.Ack(_) => Ok
-      } recover { case _ => NotOk } pipeTo sender()
-
+      (master ? Work("", key.toInt)) map {
+        case Master.Ack(_) => replyTo ! Ok(100)
+      } recover { case _ => NotOk }
+    case _: UpdateResponse[_] =>
   }
 
 }

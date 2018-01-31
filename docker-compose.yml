@@ -10,15 +10,19 @@ services:
     environment:
       CLUSTER_PORT: 1600
       CLUSTER_IP: seed
+      NODE_ROLE: seed
       SEED_PORT_1600_TCP_ADDR: seed
       QUORUM_SIZE: 4
       SEED_SIZE: 1
 
   c1:
     image: mhamrah/clustering:0.3
+    ports:
+      - 9000:9000
     environment:
       CLUSTER_PORT: 0
       CLUSTER_IP: ""
+      NODE_ROLE: node
       SEED_PORT_1600_TCP_ADDR: seed
       QUORUM_SIZE: 4
       SEED_SIZE: 1
@@ -27,5 +31,7 @@ services:
     image: 10.232.128.157:5000/yiguan/mongo:3.2.12
     tmpfs:
       - /tmp
+    volumes:
+      - ./data/db:/data/db
     ports:
       - 27027:27017

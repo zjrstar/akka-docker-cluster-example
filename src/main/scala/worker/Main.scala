@@ -33,8 +33,6 @@ object Main {
   //
   //  }
 
-  def workTimeout = 10.seconds
-
   def startBackend(port: Int, role: String): Unit = {
     val conf = ConfigFactory.parseString(s"akka.cluster.roles=[$role]")
       .withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port))
@@ -43,9 +41,9 @@ object Main {
 
     startupSharedJournal(system, startStore = (port == 2551), path =
       ActorPath.fromString("akka.tcp://ClusterSystem@127.0.0.1:2551/user/store"))
-
-    system.actorOf(ClusterSingletonManager.props(Master.props(workTimeout), PoisonPill,
-      ClusterSingletonManagerSettings(system).withRole(role)), "master")
+//
+//    system.actorOf(ClusterSingletonManager.props(Master.props(workTimeout), PoisonPill,
+//      ClusterSingletonManagerSettings(system).withRole(role)), "master")
   }
 
   def startFrontend(port: Int): Unit = {

@@ -5,7 +5,6 @@ import akka.cluster.Cluster
 import akka.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
 import scala.concurrent.duration._
 
-
 object ReplicatedCache {
   def props: Props = Props[ReplicatedCache]
 
