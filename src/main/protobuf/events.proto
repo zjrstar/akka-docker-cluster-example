@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+import "google/protobuf/wrappers.proto";
+
+package worker.model;
+
+message WorkAccepted {
+    string workId = 1;
+    int32 job = 2;
+}
+
+message WorkStarted {
+    string workId = 1;
+}
+
+message WorkCompleted {
+    string workId = 1;
+    string result = 2;
+}
+
+message WorkerFailed {
+    string workId = 1;
+}
+
+message WorkerTimedOut {
+    string workId = 1;
+}

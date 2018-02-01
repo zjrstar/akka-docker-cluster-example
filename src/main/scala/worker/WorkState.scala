@@ -1,6 +1,21 @@
 package worker
 
+import com.trueaccord.scalapb.GeneratedMessage
+import worker.model.events._
+
 import scala.collection.immutable.Queue
+
+//trait WorkDomainEvent
+//
+//case class WorkAccepted(work: Work) extends WorkDomainEvent
+//
+//case class WorkStarted(workId: String) extends WorkDomainEvent
+//
+//case class WorkCompleted(workId: String, result: Any) extends WorkDomainEvent
+//
+//case class WorkerFailed(workId: String) extends WorkDomainEvent
+//
+//case class WorkerTimedOut(workId: String) extends WorkDomainEvent
 
 object WorkState {
 
@@ -9,37 +24,31 @@ object WorkState {
     workInProgress = Map.empty,
     acceptedWorkIds = Set.empty,
     doneWorkIds = Set.empty)
-
-  trait WorkDomainEvent
-  case class WorkAccepted(work: Work) extends WorkDomainEvent
-  case class WorkStarted(workId: String) extends WorkDomainEvent
-  case class WorkCompleted(workId: String, result: Any) extends WorkDomainEvent
-  case class WorkerFailed(workId: String) extends WorkDomainEvent
-  case class WorkerTimedOut(workId: String) extends WorkDomainEvent
-
 }
 
-case class WorkState private (
-  private val pendingWork: Queue[Work],
-  private val workInProgress: Map[String, Work],
-  private val acceptedWorkIds: Set[String],
-  private val doneWorkIds: Set[String]) {
-
-  import WorkState._
+case class WorkState private(private val pendingWork: Queue[Work],
+                             private val workInProgress: Map[String, Work],
+                             private val acceptedWorkIds: Set[String],
+                             private val doneWorkIds: Set[String]) {
 
   def hasWork: Boolean = pendingWork.nonEmpty
+
   def nextWork: Work = pendingWork.head
+
   def isAccepted(workId: String): Boolean = acceptedWorkIds.contains(workId)
+
   def isInProgress(workId: String): Boolean = workInProgress.contains(workId)
+
   def isDone(workId: String): Boolean = doneWorkIds.contains(workId)
 
-  def updated(event: WorkDomainEvent): WorkState = event match {
-    case WorkAccepted(work) ⇒
+  def updated(event: GeneratedMessage): WorkState = event match {
+    case WorkAccepted(workId, job) =>
+      val work = Work(workId, job)
       copy(
         pendingWork = pendingWork enqueue work,
         acceptedWorkIds = acceptedWorkIds + work.workId)
 
-    case WorkStarted(workId) ⇒
+    case WorkStarted(workId) =>
       val (work, rest) = pendingWork.dequeue
       require(workId == work.workId, s"WorkStarted expected workId $workId == ${work.workId}")
       copy(

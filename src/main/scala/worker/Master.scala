@@ -5,6 +5,8 @@ import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
+import com.trueaccord.scalapb.GeneratedMessage
+import worker.model.events._
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
@@ -31,7 +33,6 @@ object Master {
 class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogging {
 
   import Master._
-  import WorkState._
 
   val mediator = DistributedPubSub(context.system).mediator
   ClusterClientReceptionist(context.system).registerService(self)
@@ -55,7 +56,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   override def postStop(): Unit = cleanupTask.cancel()
 
   override def receiveRecover: Receive = {
-    case event: WorkDomainEvent =>
+    case event: GeneratedMessage =>
       // only update current state by applying the event, no side effects
       workState = workState.updated(event)
       log.info("Replayed {}", event.getClass.getSimpleName)
@@ -99,7 +100,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       } else {
         log.info("Work {} is done by worker {}", workId, workerId)
         changeWorkerToIdle(workerId, workId)
-        persist(WorkCompleted(workId, result)) { event ⇒
+        persist(WorkCompleted(workId, result.toString)) { event ⇒
           workState = workState.updated(event)
           mediator ! DistributedPubSubMediator.Publish(ResultsTopic, WorkResult(workId, result))
           // Ack back to original sender
@@ -123,7 +124,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         sender() ! Master.Ack(work.workId)
       } else {
         log.info("Accepted work: {}", work.workId)
-        persist(WorkAccepted(work)) { event ⇒
+        persist(WorkAccepted(work.workId, work.job)) { event ⇒
           // Ack back to original sender
           sender() ! Master.Ack(work.workId)
           workState = workState.updated(event)

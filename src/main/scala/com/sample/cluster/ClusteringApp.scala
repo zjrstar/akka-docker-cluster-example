@@ -1,7 +1,6 @@
 package com.sample.cluster
 
 import akka.actor._
-import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
@@ -16,9 +15,8 @@ import sample.ReplicatedCache.{Cached, GetFromCache, PutInCache}
 import worker.Frontend.Ok
 import worker._
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 
 object ClusteringApp extends App with Protocol {
 
@@ -36,17 +34,6 @@ object ClusteringApp extends App with Protocol {
 
   replicatedCache ! PutInCache("key1", s"A: ${System.currentTimeMillis()}")
 
-    while (true) {
-      val f = replicatedCache ? GetFromCache("key1")
-      val result = Await.result(f, 30 seconds).asInstanceOf[Cached]
-      result match {
-        case Cached(key, Some(value)) => //println(s"""key=${key} for value=${value}""")
-      }
-      Cluster(system).state.members.filter(_.address.host.get.contains("seed")).foreach(m => println(s"seed member: ${m}"))
-      Cluster(system).state.members.foreach(m => println(s"member: ${m}"))
-      Thread.sleep(5000)
-    }
-
   //  val master = system.actorOf(ClusterSingletonManager.props(Master.props(workTimeout), PoisonPill,
   //    ClusterSingletonManagerSettings(system).withRole("node")), "master")
 
@@ -62,9 +49,9 @@ object ClusteringApp extends App with Protocol {
     path("square") {
       get {
         parameters(('id.as[String], 'number.as[Int]))
-          .as(Work) { work =>
+          .as(Work) { request =>
             implicit val timeout = Timeout(5.seconds)
-            //        val work = Work("1", 10)
+            val work = Work(Random.nextString(5), request.job)
             onComplete(frontend ? work) {
               case Success(res: Ok) => complete(ToResponseMarshallable(OK -> res))
               case Failure(t) => complete(StatusCodes.InternalServerError, t.getMessage)
@@ -74,6 +61,17 @@ object ClusteringApp extends App with Protocol {
     }
 
   val bindingFuture = Http().bindAndHandle(route, "0.0.0.0", 9000)
+
+//  while (true) {
+//    val f = replicatedCache ? GetFromCache("key1")
+//    val result = Await.result(f, 30 seconds).asInstanceOf[Cached]
+//    result match {
+//      case Cached(key, Some(value)) => //println(s"""key=${key} for value=${value}""")
+//    }
+//    Cluster(system).state.members.filter(_.address.host.get.contains("seed")).foreach(m => println(s"seed member: ${m}"))
+//    Cluster(system).state.members.foreach(m => println(s"member: ${m}"))
+//    Thread.sleep(5000)
+//  }
 
   sys.addShutdownHook(system.terminate())
 }
